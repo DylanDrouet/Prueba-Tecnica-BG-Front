@@ -107,6 +107,7 @@ export class ProductsComponent implements OnInit {
   loading = false;
   errorMessage = '';
   addedMessage = '';
+  private messageTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(private productsService: ProductsService, private cartService: CartService) {}
 
@@ -135,15 +136,18 @@ export class ProductsComponent implements OnInit {
   }
 
   addToCart(product: Product): void {
-    this.addedMessage = '';
     this.errorMessage = '';
+    clearTimeout(this.messageTimeout);
 
     this.cartService.addItem(product.id, 1).subscribe({
       next: () => {
         this.addedMessage = `${product.name} agregado al carrito.`;
+        this.messageTimeout = setTimeout(() => (this.addedMessage = ''), 3000);
       },
       error: err => {
+        this.addedMessage = '';
         this.errorMessage = err.error?.message || 'Error al agregar al carrito.';
+        this.messageTimeout = setTimeout(() => (this.errorMessage = ''), 3000);
       }
     });
   }

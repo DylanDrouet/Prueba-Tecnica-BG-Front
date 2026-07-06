@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
 import { OrdersService } from '../../core/services/orders.service';
-import { Cart } from '../../core/models/models';
+import { Cart, Order } from '../../core/models/models';
 
 @Component({
   selector: 'app-cart',
@@ -17,46 +17,67 @@ import { Cart } from '../../core/models/models';
     </nav>
 
     <div class="page-content">
-      <h2>Carrito</h2>
-      <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+      <div *ngIf="!confirmedOrder">
+        <h2>Carrito</h2>
+        <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
-      <div *ngIf="cart && cart.items.length > 0">
-        <div class="row header">
-          <span>Producto</span>
-          <span>Cantidad</span>
-          <span>Precio</span>
-          <span>Subtotal</span>
-          <span></span>
+        <div *ngIf="cart && cart.items.length > 0">
+          <div class="row header">
+            <span>Producto</span>
+            <span>Cantidad</span>
+            <span>Precio</span>
+            <span>Subtotal</span>
+            <span></span>
+          </div>
+
+          <div class="row" *ngFor="let item of cart.items">
+            <span>{{ item.productName }}</span>
+            <input
+              type="number"
+              min="1"
+              [max]="item.availableStock"
+              [value]="item.quantity"
+              (change)="updateQuantity(item.productId, $event)"
+            />
+            <span>{{ item.unitPrice | currency }}</span>
+            <span>{{ item.subtotal | currency }}</span>
+            <button class="link" (click)="removeItem(item.productId)">Quitar</button>
+          </div>
+
+          <div class="totals">
+            <p>Subtotal: {{ cart.subtotal | currency }}</p>
+            <p *ngIf="cart.discountAmount > 0" class="discount">
+              Descuento (10%): -{{ cart.discountAmount | currency }}
+            </p>
+            <p class="total">Total: {{ cart.total | currency }}</p>
+          </div>
+
+          <button class="checkout" (click)="checkout()" [disabled]="checkingOut">
+            {{ checkingOut ? 'Procesando...' : 'Finalizar compra' }}
+          </button>
         </div>
 
-        <div class="row" *ngFor="let item of cart.items">
-          <span>{{ item.productName }}</span>
-          <input
-            type="number"
-            min="1"
-            [max]="item.availableStock"
-            [value]="item.quantity"
-            (change)="updateQuantity(item.productId, $event)"
-          />
-          <span>{{ item.unitPrice | currency }}</span>
-          <span>{{ item.subtotal | currency }}</span>
-          <button class="link" (click)="removeItem(item.productId)">Quitar</button>
-        </div>
-
-        <div class="totals">
-          <p>Subtotal: {{ cart.subtotal | currency }}</p>
-          <p *ngIf="cart.discountAmount > 0" class="discount">
-            Descuento (10%): -{{ cart.discountAmount | currency }}
-          </p>
-          <p class="total">Total: {{ cart.total | currency }}</p>
-        </div>
-
-        <button class="checkout" (click)="checkout()" [disabled]="checkingOut">
-          {{ checkingOut ? 'Procesando...' : 'Finalizar compra' }}
-        </button>
+        <p *ngIf="cart && cart.items.length === 0" class="hint">Tu carrito está vacío.</p>
       </div>
 
-      <p *ngIf="cart && cart.items.length === 0" class="hint">Tu carrito está vacío.</p>
+      <div class="confirmation" *ngIf="confirmedOrder">
+        <div class="check-icon">✓</div>
+        <h2>¡Compra realizada con éxito!</h2>
+        <p class="hint">Orden #{{ confirmedOrder.id }}</p>
+
+        <div class="totals">
+          <p>Subtotal: {{ confirmedOrder.subtotal | currency }}</p>
+          <p *ngIf="confirmedOrder.discountAmount > 0" class="discount">
+            Descuento: -{{ confirmedOrder.discountAmount | currency }}
+          </p>
+          <p class="total">Total pagado: {{ confirmedOrder.total | currency }}</p>
+        </div>
+
+        <div class="actions">
+          <a routerLink="/products" class="btn primary">Seguir comprando</a>
+          <a routerLink="/orders" class="btn secondary">Ver historial</a>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -108,18 +129,47 @@ import { Cart } from '../../core/models/models';
       border-radius: 8px;
       font-size: 13px;
     }
+    .confirmation {
+      text-align: center;
+      background: white;
+      border-radius: 12px;
+      padding: 40px 24px;
+      max-width: 400px;
+      margin: 40px auto;
+    }
+    .check-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #e8f8ee;
+      color: #1e8449;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .confirmation .totals { text-align: left; margin: 24px 0; }
+    .actions { display: flex; gap: 12px; margin-top: 16px; }
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .btn.primary { background: #4f6ef7; color: white; }
+    .btn.secondary { background: #f0f1f5; color: #333; }
   `]
 })
 export class CartComponent implements OnInit {
   cart: Cart | null = null;
+  confirmedOrder: Order | null = null;
   errorMessage = '';
   checkingOut = false;
 
-  constructor(
-    private cartService: CartService,
-    private ordersService: OrdersService,
-    private router: Router
-  ) {}
+  constructor(private cartService: CartService, private ordersService: OrdersService) {}
 
   ngOnInit(): void {
     this.loadCart();
@@ -152,7 +202,8 @@ export class CartComponent implements OnInit {
 
     this.ordersService.checkout().subscribe({
       next: order => {
-        this.router.navigate(['/orders', order.id]);
+        this.confirmedOrder = order;
+        this.checkingOut = false;
       },
       error: err => {
         this.errorMessage = err.error?.message || 'Error al procesar la compra.';

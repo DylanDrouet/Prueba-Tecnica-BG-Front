@@ -22,9 +22,4 @@ export const routes: Routes = [
   loadComponent: () => import('./features/orders/order-history.component').then(m => m.OrderHistoryComponent),
   canActivate: [authGuard]
 },
-{
-  path: 'orders/:id',
-  loadComponent: () => import('./features/orders/order-detail.component').then(m => m.OrderDetailComponent),
-  canActivate: [authGuard]
-}
 ];
