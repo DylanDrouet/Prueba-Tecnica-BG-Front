@@ -1,1 +1,36 @@
-/* You can add global styles to this file, and also import other style files */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f5f6f8;
+  color: #1a1a1a;
+}
+
+.topbar {
+  display: flex;
+  gap: 24px;
+  padding: 16px 32px;
+  background: white;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 24px;
+}
+
+.topbar a {
+  text-decoration: none;
+  color: #555;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.topbar a:hover {
+  color: #4f6ef7;
+}
+
+.page-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
