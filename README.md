@@ -74,8 +74,8 @@ Usa las mismas credenciales sembradas en el backend:
 
 | Usuario | Contraseña | Rol |
 |---|---|---|
-| `admin` | `Admin123!` | Admin |
-| `cliente1` | `Cliente123!` | Customer |
+| `Fernando Mendoza` | `Admin*123` | Admin |
+| `Irving Zambrano` | `Cliente*123` | Customer |
 
 ## Flujo funcional
 
